@@ -173,7 +173,8 @@ void FORTRAN(applybounfem,(ITG *nodeboun,ITG *ndirboun,
 			   ITG *nodempc,ITG *ipompc,double *coefmpc,
 			   ITG *inomat,ITG *mi,ITG *ilboun,ITG *ilmpc,
 			   char *labmpc,double *coefmodmpc,ITG *iexplicit,
-			   ITG *nboun, ITG *nmpc,ITG *nfreestream,ITG *nsolidsurf));
+			   ITG *nboun, ITG *nmpc,ITG *nfreestream,ITG *nsolidsurf,
+		       ITG *num_cpus));
 
 void FORTRAN(applybounp,(ITG *nodeboun,ITG *ndirboun,ITG *nboun,
 			 double *xbounact,ITG *nk,double *vold,double *v,
@@ -2536,7 +2537,8 @@ void FORTRAN(mafillprhs,(ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
 			 ITG *ipompc,ITG *nodempc,double *coefmpc,ITG *nmpc,
 			 double *b,ITG *nactdoh,ITG *mi,double *v,
 			 double *theta1,ITG *ne,double *dtimef,
-			 ITG *ipvar,double *var,ITG *compressible, ITG* num_cpus));
+			 ITG *ipvar,double *var,ITG *compressible,
+				 double *b1_,ITG* num_cpus));
 
 void FORTRAN(mafillsm,(double *co,ITG *nk,ITG *kon,ITG *ipkon,char *lakon,
                ITG *ne,ITG *nodeboun,ITG *ndirboun,double *xboun,
@@ -2981,11 +2983,12 @@ void FORTRAN(mafillv1rhs,(double *co,ITG *nk,ITG *kon,ITG *ipkon,
 	 double *dtimef,ITG *ipvar,double *var,
 	 ITG *ipvarf,double *varf,ITG *ipface,ITG *ifreesurface,
 	 double *depth,double *dgravity,double *cocon,ITG *ncocon,ITG *inc,
-	 double *theta1,double *reltimef,double *v,ITG* num_cpus));
+	 double *theta1,double *reltimef,double *v,double *b1_,double *b2_,
+	 ITG* num_cpus));
 
 void FORTRAN(mafillv2rhs,(ITG *kon,ITG *ipkon,char *lakon,double *b2,double *v,
 			  ITG *ne,ITG *mi,double *dtimef,ITG *ipvar,
-			  double *var,ITG *nk,ITG *num_cpus));
+			  double *var,ITG *nk,double *b2_,ITG *num_cpus));
 
 void FORTRAN(mafillvlhs,(ITG *nk,ITG *kon,ITG *ipkon,char *lakon,ITG *ne,
 			 ITG *icolv,ITG *jqv,ITG *irowv,ITG *nzsv,double *adbv,

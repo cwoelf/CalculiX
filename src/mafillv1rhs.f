@@ -25,7 +25,7 @@
      &     time,istep,ibody,xloadold,iturbulent,
      &     nelemface,sideface,nface,compressible,dtimef,ipvar,
      &     var,ipvarf,varf,ipface,ifreesurface,depth,dgravity,cocon,
-     &     ncocon,iinc,theta1,reltimef,b1,num_cpus)
+     &     ncocon,iinc,theta1,reltimef,b1,b1_,b2_,num_cpus)
 !     
 !     filling the rhs b1 for equations of steps 1,2,4 and 5
 !     filling the rhs b2 for equations of step 3
@@ -57,19 +57,12 @@
      &     physcon(*),shcon(0:3,ntmat_,*),xbody(7,*),var(*),varf(*),
      &     om,dtimef,ttime,time,dgravity,b2(nk,3),
      &     cocon(0:6,ntmat_,*),theta1,bb(3,8),reltimef,b1(nk,0:mi(2)),
-     &     depth(*)
+     &     depth(*),b1_(nk,0:mi(2),num_cpus),b2_(nk,3,num_cpus)
 !
-!     We use heap allocated b1_ and b2_ where each thread owns a slice
-!     instead of an OpenMP array reduction clause into b1 and b2 which
-!     exceeds default thread stack sizes for large models.
-!
-      real*8, allocatable :: b1_(:,:,:), b2_(:,:,:)
-!
-      allocate(b1_(nk,0:mi(2),num_cpus))
-      allocate(b2_(nk,3,num_cpus))
-!
-      b1_=0
-      b2_=0
+!     b1_ and b2_ are per-thread partial-sum buffers (each thread owns
+!     the slice b1_(:,:,tid)) supplied by the caller. Using them instead
+!     of an OpenMP array reduction clause into b1 and b2 avoids exceeding
+!     the default thread stack sizes for large models.
 !
 !     check whether energy equation is needed
 !
@@ -81,6 +74,12 @@
 
 !$omp parallel private(tid) num_threads(num_cpus)
       tid = omp_get_thread_num() + 1
+!
+!     each thread zeroes its own contiguous slice
+!
+      b1_(:,:,tid)=0.d0
+      b2_(:,:,tid)=0.d0
+!
 !$omp do
 !$omp&private(j,k,index,indexe,nope,om,bodyf,p1,p2,node,jdof1,id,ist)
 !$omp&private(ff,bb)
@@ -219,25 +218,24 @@
 !
       do k = 1, num_cpus
          do j=0,mi(2)
-!$omp do
+!$omp do schedule(static)
             do i=1,nk
                b1(i,j) = b1(i,j) + b1_(i,j,k)
             end do
-!$omp end do
+!$omp end do nowait
          end do
+      end do
 !
+      do k = 1, num_cpus
          do j=1,3
-!$omp do
+!$omp do schedule(static)
             do i=1,nk
                b2(i,j) = b2(i,j) + b2_(i,j,k)
             end do
-!$omp end do
+!$omp end do nowait
          end do
       end do
 !$omp end parallel
-!
-      deallocate(b1_)
-      deallocate(b2_)
 !
 c      write(*,*) 'mafilltrhs '
 c      do i=1,nk

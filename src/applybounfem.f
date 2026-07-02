@@ -21,7 +21,7 @@
      &     vcon,shcon,nshcon,ntmat_,physcon,v,
      &     compressible,nodempc,ipompc,coefmpc,inomat,
      &     mi,ilboun,ilmpc,labmpc,coefmodmpc,iexplicit,
-     &     nboun,nmpc,nfreestream,nsolidsurf)
+     &     nboun,nmpc,nfreestream,nsolidsurf,num_cpus)
 !     
 !     1) applies temperature and velocity SPC's for
 !     incompressible fluids (liquids)
@@ -40,7 +40,7 @@
      &     iexplicit,ifreestream(*),
      &     index,nodei,nodempc(3,*),ipompc(*),
      &     ist,ndir,ndiri,inomat(*),nref,
-     &     nboun,nmpc,nfreestream,nsolidsurf
+     &     nboun,nmpc,nfreestream,nsolidsurf,num_cpus
 !     
       real*8 rho,vold(0:mi(2),*),xbounact(*),
      &     shcon(0:3,ntmat_,*),coefmodmpc(*),
@@ -50,7 +50,7 @@
 !     
       nref=0
 !
-!$omp parallel
+!$omp parallel num_threads(num_cpus)
 !
 !     SPC's: temperature, velocity and pressure (latter only for
 !     compressible fluids)
