@@ -69,12 +69,6 @@
       allocate(b1_(num_cpus,nk,0:mi(2)))
       allocate(b2_(num_cpus,nk,3))
 !
-!$omp parallel do num_threads(num_cpus)
-      do i=1,nk
-         b1_(1:num_cpus,i,0:mi(2))=0.d0
-         b2_(1:num_cpus,i,1:3)=0.d0
-      end do
-!
 !     check whether energy equation is needed
 !
       if(ithermal(1).gt.1) then
@@ -85,6 +79,13 @@
 
 !$omp parallel private(tid) num_threads(num_cpus)
       tid = omp_get_thread_num() + 1
+!$omp do
+      do i=1,nk
+         b1_(1:num_cpus,i,0:mi(2))=0.d0
+         b2_(1:num_cpus,i,1:3)=0.d0
+      end do
+!$omp end do
+!
 !$omp do
 !$omp&private(j,k,index,indexe,nope,om,bodyf,p1,p2,node,jdof1,id,ist)
 !$omp&private(ff,bb)

@@ -45,13 +45,13 @@
 !
       allocate(b1_(num_cpus,nk))
 !
-!$omp parallel do num_threads(num_cpus)
+!$omp parallel private(tid) num_threads(num_cpus)
+      tid = omp_get_thread_num() + 1
+!$omp do
       do i=1,nk
          b1_(1:num_cpus,i)=0.d0
       end do
-!
-!$omp parallel private(tid) num_threads(num_cpus)
-      tid = omp_get_thread_num() + 1
+!$omp end do
 !$omp do private(j,index,indexe,nope,node,jdof1,id,ist,ff)
       do i=1,ne
 !     
