@@ -18,7 +18,7 @@
 !     
       subroutine mafillprhs(nk,kon,ipkon,lakon,ipompc,nodempc,
      &     coefmpc,nmpc,b1,nactdoh,mi,v,theta1,ne,dtimef,ipvar,var,
-     &     compressible,num_cpus)
+     &     compressible,b1_,num_cpus)
 !     
 !     filling the rhs b of the pressure equations (step 2)
 !
@@ -33,24 +33,20 @@
      &     id,ist,index,jdof1,node,indexe,nope,num_cpus,tid
 !     
       real*8 coefmpc(*),b1(nk,0:mi(2)),v(nk,0:mi(2)),
-     &     ff(8),theta1,var(*),dtimef
+     &     ff(8),theta1,var(*),dtimef,b1_(nk,num_cpus)
 !
-!     We use heap allocated b1_ where each thread owns a slice
-!     instead of an OpenMP array reduction clause into b1 which
-!     might exceed the default thread stack sizes for very large
-!     models.
-!
-      real*8, allocatable :: b1_(:,:)
-!
-      allocate(b1_(nk,num_cpus))
+!     b1_ is a per-thread partial-sum buffer (each thread owns the slice
+!     b1_(:,tid)) supplied by the caller. Using it instead of an OpenMP
+!     array reduction clause into b1 avoids exceeding the default thread
+!     stack sizes for very large models.
 !
 !$omp parallel private(tid) num_threads(num_cpus)
-!$omp do
-      do i=1,nk
-         b1_(i,1:num_cpus)=0.d0
-      end do
-!$omp end do
       tid = omp_get_thread_num() + 1
+!
+!     each thread zeroes its own contiguous slice (streaming stores,
+!     NUMA-correct first touch)
+!
+      b1_(:,tid)=0.d0
 !$omp do private(j,index,indexe,nope,node,jdof1,id,ist,ff)
       do i=1,ne
 !     
@@ -124,8 +120,6 @@
 !$omp end do nowait
       end do
 !$omp end parallel
-!
-      deallocate(b1_)
 !
 c      write(*,*) 'mafillprhs '
 c      do i=1,nk

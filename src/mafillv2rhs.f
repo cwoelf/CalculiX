@@ -17,7 +17,7 @@
 !     Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
 !     
       subroutine mafillv2rhs(kon,ipkon,lakon,b2,v,ne,mi,dtimef,
-     &     ipvar,var,nk,num_cpus)
+     &     ipvar,var,nk,b2_,num_cpus)
 !     
 !     filling the rhs b2 of the velocity equations (step 3)
 !
@@ -31,24 +31,21 @@
       integer kon(*),ipkon(*),ne,mi(*),ipvar(*),i,j,k,
      &     node,indexe,nope,nk,num_cpus,tid
 !     
-      real*8 b2(nk,3),v(nk,0:mi(2)),bb(3,8),dtimef,var(*)
+      real*8 b2(nk,3),v(nk,0:mi(2)),bb(3,8),dtimef,var(*),
+     &     b2_(nk,3,num_cpus)
 !
-!     We use heap allocated b1_ where each thread owns a slice
-!     instead of an OpenMP array reduction clause into b1 which
-!     might exceed the default thread stack sizes for very large
-!     models.
-!
-      real*8, allocatable :: b2_(:,:,:)
-!
-      allocate(b2_(nk,3,num_cpus))
+!     b2_ is a per-thread partial-sum buffer (each thread owns the slice
+!     b2_(:,:,tid)) supplied by the caller. Using it instead of an
+!     OpenMP array reduction clause into b2 avoids exceeding the default
+!     thread stack sizes for very large models.
 !
 !$omp parallel private(tid) num_threads(num_cpus)
-!$omp do
-      do i=1,nk
-         b2_(i,1:3,1:num_cpus)=0.d0
-      end do
-!$omp end do
       tid = omp_get_thread_num() + 1
+!
+!     each thread zeroes its own contiguous slice (streaming stores,
+!     NUMA-correct first touch)
+!
+      b2_(:,:,tid)=0.d0
 !$omp do private(j,k,indexe,nope,node,bb)
       do i=1,ne
 !     
@@ -86,8 +83,6 @@
          enddo
       end do
 !$omp end parallel
-!
-      deallocate(b2_)
 !
 c      write(*,*) 'mafillv2rhs '
 c      do i=1,nk

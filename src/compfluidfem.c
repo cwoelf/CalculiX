@@ -116,7 +116,8 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
     *vconini=NULL,*doubleglob=NULL,*coefmpc=NULL,*fmpc=NULL,*co=NULL,
     *vold=NULL,reltime,*dhel=NULL,*voldo=NULL,dtimefo,temp,ratio,
     *aubvr=NULL,*coefmodmpc=NULL,*voldini=NULL,*depth=NULL,*vcono=NULL,
-    vconmax[7],vmax[7],*v=NULL,*b1=NULL,*b2=NULL;
+    vconmax[7],vmax[7],*v=NULL,*b1=NULL,*b2=NULL,*b1v_=NULL,*b2t_=NULL,
+    *b1p_=NULL;
 
   nodempc=*nodempcp;ipompc=*ipompcp;ikmpc=*ikmpcp;ilmpc=*ilmpcp;
   coefmpc=*coefmpcp;labmpc=*labmpcp;fmpc=*fmpcp;co=*cop;
@@ -455,6 +456,15 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
     memcpy(voldini,vold,sizeof(double)*mt**nk);
   }
   
+  /* persistent per-thread partial-sum buffers for the RHS assembly
+     routines (mafillv1rhs/mafillprhs/mafillv2rhs); allocated once here so
+     they are not re-faulted from the OS every timestep. b2t_ is shared by
+     mafillv1rhs and mafillv2rhs (used at disjoint points per iteration) */
+
+  NNEW(b1v_,double,mt**nk*num_cpus);
+  NNEW(b2t_,double,3**nk*num_cpus);
+  NNEW(b1p_,double,*nk*num_cpus);
+
   do{
 
     /* this loop is needed in case the shock smoothing coefficient
@@ -604,7 +614,7 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
                            nelemface,sideface,nface,&compressible,
                            &dtimef,ipvar,var,ipvarf,varf,ipface,ifreesurface,
                            depth,&dgravity,cocon,ncocon,iinc,&theta1,
-                           &reltimef,b1,&num_cpus));
+                           &reltimef,b1,b1v_,b2t_,&num_cpus));
 
       /* solving the equations */
       
@@ -624,7 +634,7 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
 
       FORTRAN(mafillprhs,(nk,kon,ipkon,lakon,ipompc,nodempc,coefmpc,
                           nmpc,b1,nactdoh,mi,v,&theta1,ne,
-                          &dtimef,ipvar,var,&compressible,&num_cpus));
+                          &dtimef,ipvar,var,&compressible,b1p_,&num_cpus));
 
       if(compressible){
 	      
@@ -694,7 +704,7 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
 
       if(compressible==0){
         FORTRAN(mafillv2rhs,(kon,ipkon,lakon,b2,v,ne,mi,
-                             &dtimef,ipvar,var,nk,&num_cpus));
+                             &dtimef,ipvar,var,nk,b2t_,&num_cpus));
       }
 
       /* solving the equations for V** */
@@ -965,7 +975,9 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
     if((iit==jmax[1])||(iconvergence==1)) break;
 
   }while(1);
-  
+
+  SFREE(b1v_);SFREE(b2t_);SFREE(b1p_);
+
   if((compressible==0)&&(neqp>0)){
     if(*isolver==0){
 #ifdef SPOOLES
