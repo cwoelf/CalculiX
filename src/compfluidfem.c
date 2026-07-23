@@ -783,7 +783,7 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
                             &compressible,nodempc,ipompc,coefmpc,
                             inomat,mi,ilboun,ilmpc,labmpc,
                             coefmodmpc,&iexplicit,nboun,
-                            nmpc,nfreestream,nsolidsurf));
+                            nmpc,nfreestream,nsolidsurf,&num_cpus));
 
       /* calculating the conservative variables from the physical
 	 variables */
