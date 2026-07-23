@@ -50,12 +50,12 @@
 !     
       nref=0
 !
-!$omp parallel
+!$omp parallel num_threads(num_cpus)
 !
 !     SPC's: temperature, velocity and pressure (latter only for
 !     compressible fluids)
 !
-!$omp do private(i,ndir,node) num_threads(num_cpus)
+!$omp do private(i,ndir,node)
       do j=1,nboun
 !     
 !     monotonically increasing DOF-order
@@ -87,7 +87,6 @@
         nref=0
 !
 !$omp do private(i,ist,node,ndir,nodei,ndiri,index,sum)
-!$omp&num_threads(num_cpus)
         do j=1,nmpc
 !     
 !     monotonically increasing DOF-order
@@ -136,7 +135,6 @@
         nref=0
 !
 !$omp do private(i,index,ndir,node,ndiri,nodei,residu,correction)
-!$omp&num_threads(num_cpus)
         do j=1,nmpc
           i=ilmpc(j)
           index=ipompc(i)
@@ -186,7 +184,7 @@
         xtu=10.d0*physcon(5)/physcon(8)
         xkin=10.d0**(-3.5d0)*xtu
 
-!$omp do private(node,imat,temp,rho,dvi) num_threads(num_cpus)
+!$omp do private(node,imat,temp,rho,dvi)
         do j=1,nfreestream
           node=ifreestream(j)
           imat=inomat(node)
@@ -210,7 +208,7 @@
 !     
 !     solid boundary conditions for the turbulent variables 
 !
-!$omp do private(node,imat,temp,rho,dvi) num_threads(num_cpus)
+!$omp do private(node,imat,temp,rho,dvi)
         do j=1,nsolidsurf
 !
 !         turbulent kinetic energy is applied at the wall
@@ -236,7 +234,6 @@
 !     conservative variables
 !
 !$omp do private(i,ist,node,ndir,nodei,imat,index,sumk,sumt)
-!$omp&num_threads(num_cpus)
         do j=1,nmpc
           i=ilmpc(j)
           if(labmpc(i)(1:6).ne.'CYCLIC') cycle
