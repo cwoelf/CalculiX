@@ -37,18 +37,17 @@
 !     instead of an OpenMP array reduction clause into b1 which
 !     might exceed the default thread stack sizes for very large
 !     models.
-!     Thread index is leading so the reduction inner loop is contiguous.
 !
       real*8, allocatable :: b2_(:,:,:)
 !
-      allocate(b2_(num_cpus,nk,3))
-!
-!$omp parallel do num_threads(num_cpus)
-      do i=1,nk
-         b2_(1:num_cpus,i,1:3)=0.d0
-      end do
+      allocate(b2_(nk,3,num_cpus))
 !
 !$omp parallel private(tid) num_threads(num_cpus)
+!$omp do
+      do i=1,nk
+         b2_(i,1:3,1:num_cpus)=0.d0
+      end do
+!$omp end do
       tid = omp_get_thread_num() + 1
 !$omp do private(j,k,indexe,nope,node,bb)
       do i=1,ne
@@ -71,21 +70,21 @@
         do j=1,nope
           node=kon(indexe+j)
           do k=1,3
-            b2_(tid,node,k)=b2_(tid,node,k)+bb(k,j)
+            b2_(node,k,tid)=b2_(node,k,tid)+bb(k,j)
           enddo
         enddo
       enddo
 !$omp end do
 !
-         do j=1,3
-!$omp do
+      do j=1,3
+         do k = 1, num_cpus
+!$omp do schedule(static)
             do i=1,nk
-               do k=1,num_cpus
-                  b2(i,j)=b2(i,j)+b2_(k,i,j)
-               end do
+               b2(i,j)=b2(i,j)+b2_(i,j,k)
             end do
-!$omp end do
-         end do
+!$omp end do nowait
+         enddo
+      end do
 !$omp end parallel
 !
       deallocate(b2_)
