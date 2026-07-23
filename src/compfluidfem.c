@@ -526,7 +526,7 @@ void compfluidfem(double **cop,ITG *nk,ITG **ipkonp,ITG **konp,char **lakonp,
       if (compressible==1) {
         memcpy(vcono,vcon,sizeof(double)*mt**nk);
         ratio = dtimef / (2.*dtimefo);
-        #pragma omp parallel for private(j, temp)
+        #pragma omp parallel for private(j, temp) num_threads(num_cpus)
         for (i=0;i<*nk;i++) {
           for (j=0;j<mt;j++) {
             temp = vold[i*mt+j];
