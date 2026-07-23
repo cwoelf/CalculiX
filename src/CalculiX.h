@@ -173,7 +173,8 @@ void FORTRAN(applybounfem,(ITG *nodeboun,ITG *ndirboun,
 			   ITG *nodempc,ITG *ipompc,double *coefmpc,
 			   ITG *inomat,ITG *mi,ITG *ilboun,ITG *ilmpc,
 			   char *labmpc,double *coefmodmpc,ITG *iexplicit,
-			   ITG *nboun, ITG *nmpc,ITG *nfreestream,ITG *nsolidsurf));
+			   ITG *nboun, ITG *nmpc,ITG *nfreestream,ITG *nsolidsurf,
+		       ITG *num_cpus));
 
 void FORTRAN(applybounp,(ITG *nodeboun,ITG *ndirboun,ITG *nboun,
 			 double *xbounact,ITG *nk,double *vold,double *v,
